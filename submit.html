@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add Your List — The Great Southern Book Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ultra&family=Alegreya:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
+<style>
+  /* ---------- Design tokens (match the rest of the site) ---------- */
+  :root {
+    --ink: #2b2420;
+    --ink-muted: #6b6058;
+    --paper: #ffffff;
+    --cream: #f0e9df;
+    --line: #ddd2c4;
+    --indigo: #33396e;
+    --brick: #7a3a23;
+    --on-accent: #fbf8f4;
+    --error: #a3311a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Alegreya', Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  a { color: var(--indigo); }
+  a:hover { color: var(--brick); }
+
+  /* ---------- Masthead ---------- */
+  .masthead {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 32px; border-bottom: 1px solid var(--line);
+  }
+  .masthead .wordmark {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Ultra', Georgia, serif; font-weight: 400;
+    font-size: 19px; letter-spacing: 0.01em; color: var(--ink); text-decoration: none;
+  }
+  .masthead .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 500; font-size: 14px; color: var(--ink-muted); text-decoration: none;
+  }
+
+  /* ---------- Page ---------- */
+  .page { max-width: 720px; margin: 0 auto; padding: 56px 24px 96px; }
+  .page h1 { font-size: 34px; font-weight: 700; margin: 0 0 12px; color: var(--ink); }
+  .page > p.intro { color: var(--ink-muted); font-size: 17px; margin: 0 0 40px; max-width: 560px; }
+
+  fieldset { border: none; padding: 0; margin: 0 0 40px; }
+  legend {
+    font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--indigo); padding: 0 0 12px; width: 100%; border-bottom: 1px solid var(--line); margin-bottom: 20px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block; font-weight: 600; font-size: 15px; margin-bottom: 5px; color: var(--ink);
+  }
+  .field .hint { display: block; font-weight: 400; font-size: 13px; color: var(--ink-muted); margin-top: 4px; }
+  .field input[type="text"],
+  .field input[type="url"],
+  .field input[type="email"],
+  .field textarea {
+    width: 100%; font-family: 'Alegreya', Georgia, serif; font-size: 16px; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px;
+  }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--indigo); outline-offset: 1px; }
+  .field textarea { resize: vertical; min-height: 44px; }
+  .two-col { display: flex; gap: 16px; }
+  .two-col .field { flex: 1 1 0; }
+
+  /* ---------- Book rows ---------- */
+  .books-status { font-size: 14px; color: var(--ink-muted); margin-bottom: 14px; font-style: italic; }
+  .books-status.ok { color: #2f6b3a; }
+  .book-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px; margin-bottom: 10px;
+  }
+  .book-row.dragging { opacity: 0.4; }
+  .row-handle {
+    cursor: grab; color: var(--ink-muted); padding-top: 6px; flex: 0 0 auto; touch-action: none;
+  }
+  .row-rank {
+    font-weight: 700; color: var(--indigo); font-size: 18px; width: 22px; flex: 0 0 auto; padding-top: 3px; text-align: center;
+  }
+  .row-fields { flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .row-fields .title-wrap { position: relative; }
+  .row-fields input, .row-fields textarea {
+    width: 100%; font-family: 'Alegreya', Georgia, serif; font-size: 15px;
+    border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; color: var(--ink);
+  }
+  .row-fields textarea { min-height: 34px; font-style: italic; font-size: 14px; }
+  .autocomplete-list {
+    position: absolute; z-index: 5; top: 100%; left: 0; right: 0;
+    background: #fff; border: 1px solid var(--line); border-radius: 4px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08); max-height: 220px; overflow-y: auto; margin-top: 2px;
+  }
+  .autocomplete-list button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 8px 10px; font-family: 'Alegreya', Georgia, serif; font-size: 14px; color: var(--ink); cursor: pointer;
+  }
+  .autocomplete-list button:hover, .autocomplete-list button.active { background: var(--cream); }
+  .autocomplete-list .ac-author { color: var(--ink-muted); font-size: 13px; }
+  .row-actions { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; }
+  .row-actions button {
+    width: 28px; height: 28px; border: 1px solid var(--line); background: #fff; border-radius: 4px;
+    color: var(--ink-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .row-actions button:hover { background: var(--cream); color: var(--ink); }
+  .row-actions button.remove-row:hover { color: var(--error); border-color: var(--error); }
+
+  .add-row-btn {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+    background: none; border: 1px dashed var(--line); border-radius: 4px; color: var(--indigo);
+    font-family: 'Alegreya', Georgia, serif; font-weight: 600; font-size: 14px; padding: 10px 16px; cursor: pointer;
+  }
+  .add-row-btn:hover { background: var(--cream); }
+
+  /* ---------- Submit ---------- */
+  .submit-row { margin-top: 32px; }
+  .submit-btn {
+    background: var(--brick); color: var(--on-accent); border: none; border-radius: 4px;
+    font-family: 'Alegreya', Georgia, serif; font-weight: 700; font-size: 17px;
+    padding: 14px 32px; cursor: pointer;
+  }
+  .submit-btn:hover { opacity: 0.92; }
+  .submit-btn:disabled { opacity: 0.6; cursor: wait; }
+  .form-message { margin-top: 16px; font-size: 15px; }
+  .form-message.error { color: var(--error); }
+  .form-message.success { color: #2f6b3a; }
+
+  .thankyou { display: none; text-align: center; padding: 60px 24px; }
+  .thankyou h2 { font-size: 28px; margin-bottom: 12px; }
+  .thankyou p { color: var(--ink-muted); max-width: 480px; margin: 0 auto; }
+
+  @media (max-width: 560px) {
+    .two-col { flex-direction: column; gap: 0; }
+    .book-row { flex-wrap: wrap; }
+    .page { padding: 32px 16px 72px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <a class="wordmark" href="/">The Great Southern Book Club</a>
+  <a class="back-link" href="/">&larr; Back to home</a>
+</div>
+
+<div class="page">
+
+  <div id="form-view">
+    <h1>Add your list</h1>
+    <p class="intro">Help build the ultimate guide to Southern literature. Submit your all-time favorite works of fiction below.</p>
+
+    <form id="submission-form">
+
+      <fieldset>
+        <legend>About you</legend>
+        <div class="field">
+          <label for="name">Your name <span aria-hidden="true">*</span></label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="role">Title / role</label>
+            <input type="text" id="role" name="role" placeholder="e.g. Associate Professor">
+          </div>
+          <div class="field">
+            <label for="organization">Organization / affiliation</label>
+            <input type="text" id="organization" name="organization" placeholder="e.g. Auburn University">
+          </div>
+        </div>
+        <div class="field">
+          <label for="bio_link">Bio link</label>
+          <input type="url" id="bio_link" name="bio_link" placeholder="https://...">
+          <span class="hint">A link to your faculty page, website, or social profile.</span>
+        </div>
+        <div class="field">
+          <label for="photo_url">Photo URL</label>
+          <input type="url" id="photo_url" name="photo_url" placeholder="https://...">
+          <span class="hint">Link to a photo that's already online somewhere (a faculty page, LinkedIn, etc.) — we display it as a circular headshot on your list page.</span>
+        </div>
+        <div class="field">
+          <label for="email">Email <span aria-hidden="true">*</span></label>
+          <input type="email" id="email" name="email" required>
+          <span class="hint">For our use only — never published. So we can reach you when your list goes live.</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Your list</legend>
+        <div class="field">
+          <label for="list_title">List title <span aria-hidden="true">*</span></label>
+          <input type="text" id="list_title" name="list_title" required placeholder="e.g. My Essential Southern Shelf">
+        </div>
+        <div class="field">
+          <label for="url_slug">Custom URL (optional)</label>
+          <input type="text" id="url_slug" name="url_slug" placeholder="e.g. jane-smith">
+          <span class="hint">greatsouthernbookclub.com/lists/<strong id="slug-preview">your-name</strong> — we'll use your name if you leave this blank, and may adjust it slightly if it's already taken.</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Your books</legend>
+        <p class="hint" style="margin: -8px 0 16px;">List at least 10 books, in the order you'd rank them. Start typing a title to search — drag the handle (or use the arrows) to reorder.</p>
+        <div class="books-status" id="books-status">0 of 10 minimum books added</div>
+        <div id="book-rows"></div>
+        <button type="button" class="add-row-btn" id="add-row-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add another book
+        </button>
+      </fieldset>
+
+      <!-- Anti-spam honeypot (Formspree convention) -->
+      <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
+      <input type="hidden" name="_subject" value="New Great Southern Book Club list submission">
+      <input type="hidden" name="books_formatted" id="books_formatted">
+      <input type="hidden" name="books_json" id="books_json">
+
+      <div class="submit-row">
+        <button type="submit" class="submit-btn" id="submit-btn">Submit your list</button>
+        <div class="form-message" id="form-message" role="alert"></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="thankyou" id="thankyou-view">
+    <h2>Thank you!</h2>
+    <p>Your list has been submitted for review. We'll be in touch by email once it's published on the site.</p>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ======================================================================
+  // SETUP REQUIRED: replace this with your real Formspree endpoint.
+  // Sign up free at https://formspree.io, create a form, and paste the
+  // "https://formspree.io/f/xxxxxxxx" URL it gives you here.
+  // ======================================================================
+  var FORMSPREE_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+
+  // ---- Custom URL slug preview (About you name -> live /lists/ preview) ----
+  function slugify(str) {
+    return str.toLowerCase().trim()
+      .replace(/['"]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+  (function () {
+    var nameInput = document.getElementById("name");
+    var slugInput = document.getElementById("url_slug");
+    var slugPreview = document.getElementById("slug-preview");
+    var slugTouched = false;
+
+    function updatePreview() {
+      var manual = slugInput.value.trim();
+      var fromName = nameInput.value.trim();
+      var val = manual ? slugify(manual) : (fromName ? slugify(fromName) : "");
+      slugPreview.textContent = val || "your-name";
+    }
+    nameInput.addEventListener("input", function () { if (!slugTouched) updatePreview(); });
+    slugInput.addEventListener("input", function () {
+      slugTouched = slugInput.value.trim().length > 0;
+      updatePreview();
+    });
+    slugInput.addEventListener("blur", function () {
+      if (slugInput.value.trim()) slugInput.value = slugify(slugInput.value);
+      updatePreview();
+    });
+  })();
+
+  var MIN_BOOKS = 10;
+  var rowsContainer = document.getElementById("book-rows");
+  var addRowBtn = document.getElementById("add-row-btn");
+  var statusEl = document.getElementById("books-status");
+  var form = document.getElementById("submission-form");
+  var messageEl = document.getElementById("form-message");
+  var submitBtn = document.getElementById("submit-btn");
+  var rowCounter = 0;
+
+  function debounce(fn, wait) {
+    var t;
+    return function () {
+      var args = arguments, ctx = this;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(ctx, args); }, wait);
+    };
+  }
+
+  function svgIcon(path) {
+    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+  }
+
+  function createRow() {
+    rowCounter++;
+    var row = document.createElement("div");
+    row.className = "book-row";
+    row.dataset.rowId = rowCounter;
+    row.innerHTML =
+      '<div class="row-handle" title="Drag to reorder">' + svgIcon('<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>') + '</div>' +
+      '<div class="row-rank">1</div>' +
+      '<div class="row-fields">' +
+        '<div class="title-wrap">' +
+          '<input type="text" class="book-title" placeholder="Book title" autocomplete="off">' +
+          '<div class="autocomplete-list" hidden></div>' +
+        '</div>' +
+        '<input type="text" class="book-author" placeholder="Author">' +
+        '<textarea class="book-comment" placeholder="Optional note about this pick" rows="1"></textarea>' +
+      '</div>' +
+      '<div class="row-actions">' +
+        '<button type="button" class="move-up" aria-label="Move book up">' + svgIcon('<path d="M12 19V5M5 12l7-7 7 7"/>') + '</button>' +
+        '<button type="button" class="move-down" aria-label="Move book down">' + svgIcon('<path d="M12 5v14M5 12l7 7 7-7"/>') + '</button>' +
+        '<button type="button" class="remove-row" aria-label="Remove book">' + svgIcon('<path d="M6 6l12 12M18 6L6 18"/>') + '</button>' +
+      '</div>';
+    wireRow(row);
+    return row;
+  }
+
+  function wireRow(row) {
+    var titleInput = row.querySelector(".book-title");
+    var acList = row.querySelector(".autocomplete-list");
+
+    titleInput.addEventListener("input", debounce(function () {
+      var q = titleInput.value.trim();
+      if (q.length < 3) { hideList(); return; }
+      searchOpenLibrary(q).then(function (results) {
+        renderSuggestions(results);
+      });
+    }, 300));
+
+    titleInput.addEventListener("blur", function () {
+      // slight delay so a click on a suggestion registers before we hide the list
+      setTimeout(hideList, 150);
+    });
+
+    function renderSuggestions(results) {
+      if (!results.length) { hideList(); return; }
+      acList.innerHTML = "";
+      results.forEach(function (r) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.innerHTML = r.title + (r.year ? ' <span class="ac-author">(' + r.year + ')</span>' : "") +
+          '<br><span class="ac-author">' + (r.author || "") + '</span>';
+        btn.addEventListener("mousedown", function (e) {
+          // mousedown (not click) so it fires before the input's blur handler hides the list
+          e.preventDefault();
+          titleInput.value = r.title;
+          row.querySelector(".book-author").value = r.author || "";
+          hideList();
+        });
+        acList.appendChild(btn);
+      });
+      acList.hidden = false;
+    }
+
+    function hideList() { acList.hidden = true; acList.innerHTML = ""; }
+
+    row.querySelector(".move-up").addEventListener("click", function () {
+      var prev = row.previousElementSibling;
+      if (prev) { rowsContainer.insertBefore(row, prev); renumber(); }
+    });
+    row.querySelector(".move-down").addEventListener("click", function () {
+      var next = row.nextElementSibling;
+      if (next) { rowsContainer.insertBefore(next, row); renumber(); }
+    });
+    row.querySelector(".remove-row").addEventListener("click", function () {
+      row.remove();
+      renumber();
+    });
+  }
+
+  var olCache = {};
+  var olFailureCount = 0;
+  var olNoticeShown = false;
+
+  function showOpenLibraryNotice() {
+    // Surfaces a plain-language, on-page note after repeated failures, so a
+    // non-technical visitor (or Adam, testing the site) sees *something*
+    // instead of a dropdown that silently never appears. Does not block
+    // typing — manual entry always still works.
+    if (olNoticeShown) return;
+    olNoticeShown = true;
+    var notices = document.querySelectorAll(".ol-status-notice");
+    notices.forEach(function (n) { n.remove(); });
+    var note = document.createElement("div");
+    note.className = "ol-status-notice";
+    note.style.cssText = "font-size:12px;color:var(--ink-muted);font-style:italic;margin-top:6px;";
+    note.textContent = "Book search is unavailable right now — you can still type the title and author directly.";
+    rowsContainer.parentNode.insertBefore(note, rowsContainer.nextSibling);
+  }
+
+  function searchOpenLibrary(query) {
+    if (olCache[query]) return Promise.resolve(olCache[query]);
+    var url = "https://openlibrary.org/search.json?q=" + encodeURIComponent(query) +
+      "&fields=title,author_name,first_publish_year&limit=6";
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error("Open Library responded with status " + res.status);
+      return res.json();
+    }).then(function (data) {
+      var results = (data.docs || []).map(function (d) {
+        return {
+          title: d.title,
+          author: (d.author_name && d.author_name[0]) || "",
+          year: d.first_publish_year || ""
+        };
+      });
+      olCache[query] = results;
+      olFailureCount = 0; // a success clears any earlier trouble
+      return results;
+    }).catch(function (err) {
+      // Logged to the console so it's diagnosable: open DevTools (F12, or
+      // right-click > Inspect > Console) and look for "Open Library search
+      // failed" — the message next to it says exactly what went wrong
+      // (network block, CORS, bad response, etc).
+      console.error("Open Library search failed:", err);
+      olFailureCount++;
+      if (olFailureCount >= 2) showOpenLibraryNotice();
+      return [];
+    });
+  }
+
+  function renumber() {
+    var rows = rowsContainer.querySelectorAll(".book-row");
+    rows.forEach(function (row, i) {
+      row.querySelector(".row-rank").textContent = i + 1;
+    });
+    updateStatus(rows.length);
+  }
+
+  function updateStatus(count) {
+    var complete = countComplete();
+    statusEl.textContent = complete + " of " + MIN_BOOKS + " minimum books added";
+    statusEl.classList.toggle("ok", complete >= MIN_BOOKS);
+  }
+
+  function countComplete() {
+    var rows = rowsContainer.querySelectorAll(".book-row");
+    var n = 0;
+    rows.forEach(function (row) {
+      var title = row.querySelector(".book-title").value.trim();
+      var author = row.querySelector(".book-author").value.trim();
+      if (title && author) n++;
+    });
+    return n;
+  }
+
+  // live-update the counter as people type, not just on reorder
+  rowsContainer.addEventListener("input", debounce(function () { updateStatus(); }, 200));
+
+  addRowBtn.addEventListener("click", function () {
+    rowsContainer.appendChild(createRow());
+    renumber();
+  });
+
+  // seed with the minimum number of empty rows
+  for (var i = 0; i < MIN_BOOKS; i++) {
+    rowsContainer.appendChild(createRow());
+  }
+  renumber();
+
+  // Drag-to-reorder, layered on top of the up/down buttons above.
+  // If the CDN script didn't load (blocked, offline), the up/down
+  // buttons still work fine on their own.
+  if (window.Sortable) {
+    Sortable.create(rowsContainer, {
+      handle: ".row-handle",
+      animation: 150,
+      onEnd: renumber
+    });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    messageEl.textContent = "";
+    messageEl.className = "form-message";
+
+    var rows = rowsContainer.querySelectorAll(".book-row");
+    var books = [];
+    rows.forEach(function (row) {
+      var title = row.querySelector(".book-title").value.trim();
+      var author = row.querySelector(".book-author").value.trim();
+      var comment = row.querySelector(".book-comment").value.trim();
+      if (title && author) books.push({ title: title, author: author, comment: comment });
+    });
+
+    if (books.length < MIN_BOOKS) {
+      messageEl.textContent = "Please add at least " + MIN_BOOKS + " books with both a title and an author.";
+      messageEl.className = "form-message error";
+      return;
+    }
+
+    var formatted = books.map(function (b, i) {
+      var line = (i + 1) + ". " + b.title + " by " + b.author;
+      if (b.comment) line += "\n    — " + b.comment;
+      return line;
+    }).join("\n");
+
+    document.getElementById("books_formatted").value = formatted;
+    document.getElementById("books_json").value = JSON.stringify(books);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting…";
+
+    fetch(FORMSPREE_ENDPOINT, {
+      method: "POST",
+      headers: { "Accept": "application/json" },
+      body: new FormData(form)
+    }).then(function (res) {
+      if (res.ok) {
+        document.getElementById("form-view").style.display = "none";
+        document.getElementById("thankyou-view").style.display = "block";
+      } else {
+        throw new Error("Submission failed");
+      }
+    }).catch(function () {
+      messageEl.textContent = "Something went wrong sending your list. Please try again in a moment.";
+      messageEl.className = "form-message error";
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit your list";
+    });
+  });
+})();
+</script>
+</body>
+</html>
